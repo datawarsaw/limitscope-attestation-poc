@@ -1,0 +1,33 @@
+name: Synthetic attestation PoC
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  attest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Create synthetic artifact and manifest
+        shell: bash
+        run: |
+          printf 'LimitScope synthetic artifact v1\n' > synthetic.bin
+          digest=$(sha256sum synthetic.bin | cut -d ' ' -f1)
+          printf '{"schema":1,"draft_id":"synthetic-draft-001","asset_id":"synthetic-asset-001","artifact":"synthetic.bin","sha256":"%s"}\n' "$digest" > manifest.json
+      - name: Attest artifact and manifest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: |
+            synthetic.bin
+            manifest.json
+      - name: Upload synthetic files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: synthetic-poc
+          path: |
+            synthetic.bin
+            manifest.json
+          if-no-files-found: error
+          retention-days: 7
